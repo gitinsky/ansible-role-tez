@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<configuration>
+
+  <property>
+    <name>tez.lib.uris</name>
+    <value>${fs.default.name}/apps/tez/tez-0.8.0-SNAPSHOT-minimal.tar.gz</value>
+  </property>
+
+  <property>
+    <name>tez.use.cluster.hadoop-libs</name>
+    <value>true</value>
+  </property>
+
+  <property>
+    <description>Log history using the Timeline Server</description>
+    <name>tez.history.logging.service.class</name>
+    <value>org.apache.tez.dag.history.logging.ats.ATSHistoryLoggingService</value>
+  </property>
+
+  <property>
+    <description>Publish configuration information to Timeline server.</description>
+    <name>tez.runtime.convert.user-payload.to.history-text</name>
+    <value>true</value>
+  </property>
+
+  <property>
+    <name>tez.allow.disabled.timeline-domains</name>
+    <value>true</value>
+  </property>
+
+</configuration>

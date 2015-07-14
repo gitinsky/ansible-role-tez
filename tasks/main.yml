@@ -1,0 +1,53 @@
+---
+- name: create a tez-builder user
+  user: name=tez-builder state=present
+
+- name: checkout Tez
+  git: repo=https://github.com/apache/tez.git dest=/opt/tez version=master
+
+- name: download Maven
+  get_url: url=http://apache-mirror.rbc.ru/pub/apache/maven/maven-3/3.2.5/binaries/apache-maven-3.2.5-bin.tar.gz dest=/root/apache-maven-3.2.5-bin.tar.gz
+
+- name: unpack Maven
+  shell: cd /opt && tar xzvf /root/apache-maven-3.2.5-bin.tar.gz creates=/opt/apache-maven-3.2.5
+
+- name: install protobuf-compiler
+  apt: name=protobuf-compiler state=present
+
+- name: change ownership of Tez working directory
+  file: state=directory recurse=yes owner=tez-builder group=tez-builder name=/opt/tez
+
+- name: build Tez
+  shell: cd /opt/tez && JAVA_HOME=/usr/java/jdk1.8.0_40 /opt/apache-maven-3.2.5/bin/mvn clean package -e -X -DskipTests=true -Dmaven.javadoc.skip=true creates=/opt/tez/tez-dist/target/tez-0.8.0-SNAPSHOT-minimal.tar.gz
+  sudo: yes
+  sudo_user: tez-builder
+
+- name: check if /apps/tez dir exists in HDFS
+  shell: "{{ hadoop_distr_prefix }}/bin/hadoop dfs -ls /apps/tez"
+  ignore_errors: True
+  register: result
+
+- name: create /apps/tez dir in HDFS
+  shell: "{{ hadoop_distr_prefix }}/bin/hadoop dfs -mkdir -p /apps/tez"
+  sudo: yes
+  sudo_user: "{{ hadoop_user }}"
+  when: result|failed
+
+- name: check if /apps/tez/tez-0.8.0-SNAPSHOT-minimal.tar.gz exists in HDFS
+  shell: "{{ hadoop_distr_prefix }}/bin/hadoop dfs -ls /apps/tez/tez-0.8.0-SNAPSHOT-minimal.tar.gz"
+  ignore_errors: True
+  register: result
+  sudo: yes
+  sudo_user: "{{ hadoop_user }}"
+
+- name: put TEZ libs to HDFS
+  shell: "{{ hadoop_distr_prefix }}/bin/hadoop dfs -copyFromLocal /opt/tez/tez-dist/target/tez-0.8.0-SNAPSHOT-minimal.tar.gz /apps/tez"
+  sudo: yes
+  sudo_user: "{{ hadoop_user }}"
+  when: result|failed
+
+- name: put tez-site.xml
+  template: src=tez-site.xml dest={{ hadoop_distr_prefix }}/conf/tez-site.xml
+
+- name: unpack minimal tarball
+  shell: mkdir /opt/tez/tez-jars && cd /opt/tez/tez-jars && tar xzvf /opt/tez/tez-dist/target/tez-0.8.0-SNAPSHOT-minimal.tar.gz creates=/opt/tez/tez-jars/tez-ui-0.8.0-SNAPSHOT.war
