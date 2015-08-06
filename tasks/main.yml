@@ -13,6 +13,23 @@
 
 - name: install protobuf-compiler
   apt: name=protobuf-compiler state=present
+  when: ansible_os_family  == "Debian"
+
+- name: copy protobuf-2.5.0-7.el6.x86_64.rpm
+  copy: src=protobuf-2.5.0-7.el6.x86_64.rpm dest=/root/protobuf-2.5.0-7.el6.x86_64.rpm
+  when: ansible_os_family  == "RedHat"
+
+- name: copy protobuf-compiler-2.5.0-7.el6.x86_64.rpm
+  copy: src=protobuf-compiler-2.5.0-7.el6.x86_64.rpm dest=/root/protobuf-compiler-2.5.0-7.el6.x86_64.rpm
+  when: ansible_os_family  == "RedHat"
+
+- name: install protobuf
+  yum: name=/root/protobuf-2.5.0-7.el6.x86_64.rpm state=present
+  when: ansible_os_family  == "RedHat"
+
+- name: install protobuf-compiler
+  yum: name=/root/protobuf-compiler-2.5.0-7.el6.x86_64.rpm state=present
+  when: ansible_os_family  == "RedHat"
 
 - name: change ownership of Tez working directory
   file: state=directory recurse=yes owner=tez-builder group=tez-builder name=/opt/tez
@@ -26,12 +43,13 @@
   shell: "{{ hadoop_distr_prefix }}/bin/hadoop dfs -ls /apps/tez"
   ignore_errors: True
   register: result
+  when: ansible_os_family  == "Debian"
 
 - name: create /apps/tez dir in HDFS
   shell: "{{ hadoop_distr_prefix }}/bin/hadoop dfs -mkdir -p /apps/tez"
   sudo: yes
   sudo_user: "{{ hadoop_user }}"
-  when: result|failed
+  when: result|failed and ansible_os_family  == "Debian"
 
 - name: check if /apps/tez/tez-0.8.0-SNAPSHOT-minimal.tar.gz exists in HDFS
   shell: "{{ hadoop_distr_prefix }}/bin/hadoop dfs -ls /apps/tez/tez-0.8.0-SNAPSHOT-minimal.tar.gz"
@@ -39,15 +57,18 @@
   register: result
   sudo: yes
   sudo_user: "{{ hadoop_user }}"
+  when: ansible_os_family  == "Debian"
 
 - name: put TEZ libs to HDFS
   shell: "{{ hadoop_distr_prefix }}/bin/hadoop dfs -copyFromLocal /opt/tez/tez-dist/target/tez-0.8.0-SNAPSHOT-minimal.tar.gz /apps/tez"
   sudo: yes
   sudo_user: "{{ hadoop_user }}"
-  when: result|failed
+  when: result|failed and ansible_os_family  == "Debian"
 
 - name: put tez-site.xml
   template: src=tez-site.xml dest={{ hadoop_distr_prefix }}/conf/tez-site.xml
+  when: ansible_os_family  == "Debian"
 
 - name: unpack minimal tarball
   shell: mkdir /opt/tez/tez-jars && cd /opt/tez/tez-jars && tar xzvf /opt/tez/tez-dist/target/tez-0.8.0-SNAPSHOT-minimal.tar.gz creates=/opt/tez/tez-jars/tez-ui-0.8.0-SNAPSHOT.war
+  when: ansible_os_family  == "Debian"
