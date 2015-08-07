@@ -2,6 +2,14 @@
 - name: create a tez-builder user
   user: name=tez-builder state=present
 
+- name: install git
+  yum: name=git state=present
+  when: ansible_os_family  == "RedHat"
+
+- name: install libselinux-python
+  yum: name=libselinux-python state=present
+  when: ansible_os_family  == "RedHat"
+
 - name: checkout Tez
   git: repo=https://github.com/apache/tez.git dest=/opt/tez version=master
 
